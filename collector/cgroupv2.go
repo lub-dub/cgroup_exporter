@@ -56,6 +56,50 @@ func getInfov2(name string, pids []int, metric *CgroupMetric, logger log.Logger)
 	}
 	slurmPattern := regexp.MustCompile("/job_([0-9]+)$")
 	slurmMatch := slurmPattern.FindStringSubmatch(name)
+	condorPattern := regexp.MustCompile("/condor_scratch_condor_execute_slot1_([0-9]+)$")
+	condorMatch := condorPattern.FindStringSubmatch(name)
+
+	if len(condorMatch) == 2 {
+		metric.job = true
+		metric.jobid = condorMatch[1]
+		procFS, err := procfs.NewFS(*ProcRoot)
+		if err != nil {
+			level.Error(logger).Log("msg", "Unable to get procfs", "root", *ProcRoot, "err", err)
+			return
+		}
+		var proc procfs.Proc
+		for _, pid := range pids {
+			proc, err = procFS.Proc(pid)
+			if err != nil {
+				level.Error(logger).Log("msg", "Unable to read PID", "pid", pid, "err", err)
+				return
+			}
+			exec, err := proc.Executable()
+			if err != nil {
+				level.Error(logger).Log("msg", "Unable to read process executable", "pid", pid, "err", err)
+				return
+			}
+			if filepath.Base(exec) != "sleep" {
+				break
+			}
+		}
+		procStat, err := proc.NewStatus()
+		if err != nil {
+			level.Error(logger).Log("msg", "Unable to get proc status for PID", "pid", proc.PID, "err", err)
+			return
+		}
+		// effective UID
+		uid := procStat.UIDs[1]
+		metric.uid = strconv.FormatUint(uid, 10)
+		user, err := user.LookupId(metric.uid)
+		if err != nil {
+			level.Error(logger).Log("msg", "Error looking up slurm uid", "uid", metric.uid, "err", err)
+			return
+		}
+		metric.username = user.Username
+		return
+	}
+
 	if len(slurmMatch) == 2 {
 		metric.job = true
 		metric.jobid = slurmMatch[1]
@@ -101,7 +145,7 @@ func getInfov2(name string, pids []int, metric *CgroupMetric, logger log.Logger)
 func getNamev2(pidPath string, path string, logger log.Logger) string {
 	dirs := strings.Split(pidPath, "/")
 	var name string
-	if strings.Contains(path, "slurm") {
+	if strings.Contains(path, "slurm") || strings.Contains(path, "htcondor") {
 		keepDirs := dirs[0:4]
 		name = strings.Join(keepDirs, "/")
 	} else {
