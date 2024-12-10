@@ -55,7 +55,7 @@ func getInfov2(name string, pids []int, metric *CgroupMetric, logger *slog.Logge
 	}
 	slurmPattern := regexp.MustCompile("/job_([0-9]+)$")
 	slurmMatch := slurmPattern.FindStringSubmatch(name)
-	condorPattern := regexp.MustCompile("/condor_scratch_condor_execute_slot1_([0-9]+)$")
+	condorPattern := regexp.MustCompile("/condor_scratch_condor_execute_slot1_([0-9]+)")
 	condorMatch := condorPattern.FindStringSubmatch(name)
 
 	if len(condorMatch) == 2 {
@@ -73,14 +73,6 @@ func getInfov2(name string, pids []int, metric *CgroupMetric, logger *slog.Logge
 				level.Error(logger).Log("msg", "Unable to read PID", "pid", pid, "err", err)
 				return
 			}
-			exec, err := proc.Executable()
-			if err != nil {
-				level.Error(logger).Log("msg", "Unable to read process executable", "pid", pid, "err", err)
-				return
-			}
-			if filepath.Base(exec) != "sleep" {
-				break
-			}
 		}
 		procStat, err := proc.NewStatus()
 		if err != nil {
@@ -92,7 +84,7 @@ func getInfov2(name string, pids []int, metric *CgroupMetric, logger *slog.Logge
 		metric.uid = strconv.FormatUint(uid, 10)
 		user, err := user.LookupId(metric.uid)
 		if err != nil {
-			level.Error(logger).Log("msg", "Error looking up slurm uid", "uid", metric.uid, "err", err)
+			level.Error(logger).Log("msg", "Error looking up condor uid", "uid", metric.uid, "err", err)
 			return
 		}
 		metric.username = user.Username
@@ -147,6 +139,7 @@ func getNamev2(pidPath string, path string, logger *slog.Logger) string {
 	endIndex := 3
 	if strings.Contains(path, "slurm") || strings.Contains(path, "htcondor") {
 		endIndex = 4
+	level.Debug(logger).Log("msg", "found condor")
 	}
 	if len(dirs) < endIndex {
 		endIndex = len(dirs)
