@@ -70,24 +70,25 @@ func getInfov2(name string, pids []int, metric *CgroupMetric, logger *slog.Logge
 		for _, pid := range pids {
 			proc, err = procFS.Proc(pid)
 			if err != nil {
-				level.Error(logger).Log("msg", "Unable to read PID", "pid", pid, "err", err)
-				return
+				continue
 			}
+			procStat, err := proc.NewStatus()
+			if err != nil {
+				continue
+			}
+			// effective UID
+			uid := procStat.UIDs[1]
+			metric.uid = strconv.FormatUint(uid, 10)
+			user, err := user.LookupId(metric.uid)
+			if err != nil {
+				level.Error(logger).Log("msg", "Error looking up condor uid", "uid", metric.uid, "err", err)
+				continue
+			}
+			metric.username = user.Username
 		}
-		procStat, err := proc.NewStatus()
-		if err != nil {
-			level.Error(logger).Log("msg", "Unable to get proc status for PID", "pid", proc.PID, "err", err)
-			return
+		if metric.username == "" {
+			level.Error(logger).Log("msg", "Error looking up username for ", "slot", metric.jobid)
 		}
-		// effective UID
-		uid := procStat.UIDs[1]
-		metric.uid = strconv.FormatUint(uid, 10)
-		user, err := user.LookupId(metric.uid)
-		if err != nil {
-			level.Error(logger).Log("msg", "Error looking up condor uid", "uid", metric.uid, "err", err)
-			return
-		}
-		metric.username = user.Username
 		return
 	}
 
