@@ -55,7 +55,7 @@ func getInfov2(name string, pids []int, metric *CgroupMetric, logger *slog.Logge
 	}
 	slurmPattern := regexp.MustCompile("/job_([0-9]+)$")
 	slurmMatch := slurmPattern.FindStringSubmatch(name)
-	condorPattern := regexp.MustCompile("/condor_scratch_condor_execute_slot1_([0-9]+)")
+	condorPattern := regexp.MustCompile("/_scratch_condor_execute_slot1_([0-9]+)")
 	condorMatch := condorPattern.FindStringSubmatch(name)
 
 	if len(condorMatch) == 2 {
