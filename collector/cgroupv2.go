@@ -63,7 +63,7 @@ func getInfov2(name string, pids []int, metric *CgroupMetric, logger *slog.Logge
 		metric.jobid = condorMatch[1]
 		procFS, err := procfs.NewFS(*ProcRoot)
 		if err != nil {
-			level.Error(logger).Log("msg", "Unable to get procfs", "root", *ProcRoot, "err", err)
+			logger.Error("msg", "Unable to get procfs", "root", *ProcRoot, "err", err)
 			return
 		}
 		var proc procfs.Proc
@@ -81,13 +81,14 @@ func getInfov2(name string, pids []int, metric *CgroupMetric, logger *slog.Logge
 			metric.uid = strconv.FormatUint(uid, 10)
 			user, err := user.LookupId(metric.uid)
 			if err != nil {
-				level.Error(logger).Log("msg", "Error looking up condor uid", "uid", metric.uid, "err", err)
+				logger.Error("msg", "Error looking up condor uid", "uid", metric.uid, "err", err)
 				continue
 			}
 			metric.username = user.Username
+			break
 		}
 		if metric.username == "" {
-			level.Error(logger).Log("msg", "Error looking up username for ", "slot", metric.jobid)
+			logger.Error("msg", "Error looking up username for ", "slot", metric.jobid)
 		}
 		return
 	}
@@ -140,7 +141,7 @@ func getNamev2(pidPath string, path string, logger *slog.Logger) string {
 	endIndex := 3
 	if strings.Contains(path, "slurm") || strings.Contains(path, "htcondor") {
 		endIndex = 4
-	level.Debug(logger).Log("msg", "found condor")
+		logger.Debug("msg", "found condor")
 	}
 	if len(dirs) < endIndex {
 		endIndex = len(dirs)
