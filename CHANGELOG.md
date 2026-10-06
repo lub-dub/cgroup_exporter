@@ -1,3 +1,15 @@
+## 1.3.0 / 2026-08-27
+
+### Changes
+
+* [ENHANCEMENT] Support getting PSI metrics from cgroupv2 (#54)
+
+## 1.2.1 / 2026-08-18
+
+### Changes
+
+* [BUGFIX] fix(cpumetrics): Change CPU time metric type (#52)
+
 ## 1.2.0 / 2026-06-23
 
 ### Changes
