@@ -201,7 +201,7 @@ func getNamev2(pidPath string, path string, logger *slog.Logger) string {
 	var name string
 	endIndex := 3
 	if strings.Contains(path, "slurm") || strings.Contains(path, "htcondor") {
-		endIndex = 4
+		endIndex = 5
 		logger.Debug("msg", "found condor")
 	}
 	if len(dirs) < endIndex {
